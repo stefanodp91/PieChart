@@ -10,8 +10,11 @@ class PieChartUtils {
      static final int ARCH_ALPHA = 50;
      static final float CIRCUMFERENCE_DEGREES = 360f;
      static final float BASE_CIRCLE_SWEEP_ANGLE = CIRCUMFERENCE_DEGREES;
+     static final float ARC_ANGLE_PADDING = 1.5f;
      static final float HIGHLIGHT_ARC_MULTIPLIER = 1.5f;
      static final int HIGHLIGHT_ARC_SLEEP = 5;
+     static final float HIGHLIGHT_ARC_INCREMENT = 0.6f;
+     static final float HIGHLIGHT_ARC_DECREMENT = HIGHLIGHT_ARC_INCREMENT;
      static final int DEFAULT_WIDTH = 32;
 
     static boolean isPointOnCircumference(float centerX, float centerY, float touchedX, float touchedY, float width, float radius) {

@@ -21,11 +21,14 @@ import java.util.List;
 
 import static com.github.stefanodp91.android.piechart.PieChartUtils.ANGLE_OFFSET;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.ARCH_ALPHA;
+import static com.github.stefanodp91.android.piechart.PieChartUtils.ARC_ANGLE_PADDING;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.BASE_CIRCLE_SWEEP_ANGLE;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.CIRCUMFERENCE_DEGREES;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.DEFAULT_SIZE_DIVIDER;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.DEFAULT_WIDTH;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.HALF_DIVIDER;
+import static com.github.stefanodp91.android.piechart.PieChartUtils.HIGHLIGHT_ARC_DECREMENT;
+import static com.github.stefanodp91.android.piechart.PieChartUtils.HIGHLIGHT_ARC_INCREMENT;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.HIGHLIGHT_ARC_MULTIPLIER;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.HIGHLIGHT_ARC_SLEEP;
 import static com.github.stefanodp91.android.piechart.PieChartUtils.isPointOnCircumference;
@@ -123,15 +126,47 @@ public class PieChart extends View {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
 
         // base circle
-        canvas.save();
         baseCircleSweepGradientMatrix.setRotate(ANGLE_OFFSET, mBaseCircleRect.centerX(), mBaseCircleRect.centerY());
         SweepGradient sweepGradient = new SweepGradient(mBaseCircleRect.centerX(), mBaseCircleRect.centerY(), this.mBaseCircleColorList, null);
         sweepGradient.setLocalMatrix(baseCircleSweepGradientMatrix);
         mBaseCirclePaint.setShader(sweepGradient);
         mBaseCirclePaint.setAlpha(ARCH_ALPHA);
+
+        // arc
+        if (mArcList != null && mArcList.size() > 0) {
+            for (Arc arc : mArcList) {
+                if (arc != null) {
+
+                    arc.setRect(mArcRect);
+                    arc.setRadius(mArcRadius);
+
+                    // shader
+                    Matrix mArcPaintMatrix = new Matrix();
+                    mArcPaintMatrix.setRotate(ANGLE_OFFSET, arc.getRect().centerX(), arc.getRect().centerY());
+                    SweepGradient mArcShader = new SweepGradient(arc.getRect().centerX(), arc.getRect().centerY(), arc.getColorList(), null);
+                    mArcShader.setLocalMatrix(mArcPaintMatrix);
+
+                    // paint
+                    Paint mArcPaint = new Paint();
+                    mArcPaint.setAntiAlias(true);
+                    mArcPaint.setStrokeWidth(mArcWidth);
+                    mArcPaint.setShader(mArcShader);
+                    mArcPaint.setStyle(Paint.Style.STROKE);
+                    arc.setPaint(mArcPaint);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+
+        // base circle
+        canvas.save();
         canvas.drawArc(mBaseCircleRect, ANGLE_OFFSET, BASE_CIRCLE_SWEEP_ANGLE, true, mBaseCirclePaint);
         canvas.restore();
 
@@ -149,7 +184,7 @@ public class PieChart extends View {
 
     private void drawArc(Canvas canvas, Arc arc) {
         canvas.save();
-        canvas.drawArc(arc.getRect(), arc.getStartAngle(), arc.getSweepAngle(), false, arc.getPaint());
+        canvas.drawArc(arc.getRect(), arc.getStartAngle(), arc.getSweepAngle() - ARC_ANGLE_PADDING, false, arc.getPaint());
         canvas.restore();
     }
 
@@ -164,31 +199,12 @@ public class PieChart extends View {
 
     private Arc createArc(String id, float startAngle, float sweepAngle, @ColorInt int[] colorList) {
 
-        // rect
-        RectF rect = mArcRect;
-
-        // shader
-        Matrix paintMatrix = new Matrix();
-        paintMatrix.setRotate(ANGLE_OFFSET, rect.centerX(), rect.centerY());
-        SweepGradient shader = new SweepGradient(rect.centerX(), rect.centerY(), colorList, null);
-        shader.setLocalMatrix(paintMatrix);
-
-        // paint
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setStrokeWidth(mArcWidth);
-        paint.setShader(shader);
-        paint.setStyle(Paint.Style.STROKE);
-
         // arc
         Arc arc = new Arc();
         arc.setId(id);
         arc.setStartAngle(startAngle);
         arc.setSweepAngle(sweepAngle);
         arc.setColorList(colorList);
-        arc.setRect(rect);
-        arc.setPaint(paint);
-        arc.setRadius(mArcRadius);
 
         return arc;
     }
@@ -347,7 +363,7 @@ public class PieChart extends View {
                         while (increment < maxStrokeWidth) {
                             paint.setStrokeWidth(increment);
                             setHighlighted(true);
-                            increment++;
+                            increment += HIGHLIGHT_ARC_INCREMENT;
                             pieChart.invalidate();
                             try {
                                 Thread.sleep(HIGHLIGHT_ARC_SLEEP);
@@ -369,7 +385,7 @@ public class PieChart extends View {
                         while (decrement > minStrokeWidth) {
                             paint.setStrokeWidth(decrement);
                             setHighlighted(false);
-                            decrement--;
+                            decrement -= HIGHLIGHT_ARC_DECREMENT;
                             pieChart.invalidate();
                             try {
                                 Thread.sleep(HIGHLIGHT_ARC_SLEEP);
